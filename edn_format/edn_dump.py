@@ -64,40 +64,44 @@ def udump(obj,
           string_encoding=DEFAULT_INPUT_ENCODING,
           keyword_keys=False,
           sort_keys=False,
-          sort_sets=False):
+          sort_sets=False,
+          pretty=False,
+          _indent=""):
 
     kwargs = {
         "string_encoding": string_encoding,
         "keyword_keys": keyword_keys,
         "sort_keys": sort_keys,
         "sort_sets": sort_sets,
+        "pretty": pretty,
+        "_indent": _indent+" " if pretty else ""
     }
 
     if obj is None:
-        return 'nil'
+        return _indent + 'nil'
     elif isinstance(obj, bool):
-        return 'true' if obj else 'false'
+        return _indent + ('true' if obj else 'false')
     elif isinstance(obj, (int, long, float)):
-        return unicode(obj)
+        return _indent + unicode(obj)
     elif isinstance(obj, decimal.Decimal):
-        return '{}M'.format(obj)
+        return _indent + '{}M'.format(obj)
     elif isinstance(obj, (Keyword, Symbol)):
-        return unicode(obj)
+        return _indent + unicode(obj)
     # CAVEAT LECTOR! In Python 3 'basestring' is alised to 'str' above.
     # Furthermore, in Python 2 bytes is an instance of 'str'/'basestring' while
     # in Python 3 it is not.
     elif isinstance(obj, bytes):
-        return unicode_escape(obj.decode(string_encoding))
+        return _indent + unicode_escape(obj.decode(string_encoding))
     elif isinstance(obj, basestring):
-        return unicode_escape(obj)
+        return _indent + unicode_escape(obj)
     elif isinstance(obj, tuple):
-        return '({})'.format(seq(obj, **kwargs))
+        return _indent + '({})'.format(seq(obj, **kwargs))
     elif isinstance(obj, (list, ImmutableList)):
-        return '[{}]'.format(seq(obj, **kwargs))
+        return _indent + '[{}]'.format(seq(obj, **kwargs))
     elif isinstance(obj, set) or isinstance(obj, frozenset):
         if sort_sets:
             obj = sorted(obj)
-        return '#{{{}}}'.format(seq(obj, **kwargs))
+        return _indent + '#{{{}}}'.format(seq(obj, **kwargs))
     elif isinstance(obj, dict) or isinstance(obj, ImmutableDict):
         pairs = obj.items()
         if sort_keys:
@@ -105,17 +109,18 @@ def udump(obj,
         if keyword_keys:
             pairs = ((Keyword(k) if isinstance(k, (bytes, basestring)) else k, v) for k, v in pairs)
 
-        return '{{{}}}'.format(seq(itertools.chain.from_iterable(pairs), **kwargs))
+        pairs = itertools.chain.from_iterable(pairs)
+        return _indent + '{{{}}}'.format(seq(pairs, **kwargs))
     elif isinstance(obj, fractions.Fraction):
-        return '{}/{}'.format(obj.numerator, obj.denominator)
+        return _indent + '{}/{}'.format(obj.numerator, obj.denominator)
     elif isinstance(obj, datetime.datetime):
-        return '#inst "{}"'.format(pyrfc3339.generate(obj, microseconds=True))
+        return _indent + '#inst "{}"'.format(pyrfc3339.generate(obj, microseconds=True))
     elif isinstance(obj, datetime.date):
-        return '#inst "{}"'.format(obj.isoformat())
+        return _indent + '#inst "{}"'.format(obj.isoformat())
     elif isinstance(obj, uuid.UUID):
-        return '#uuid "{}"'.format(obj)
+        return _indent + '#uuid "{}"'.format(obj)
     elif isinstance(obj, TaggedElement):
-        return unicode(obj)
+        return _indent + unicode(obj)
     raise NotImplementedError(
         u"encountered object of type '{}' for which no known encoding is available: {}".format(
             type(obj), repr(obj)))
@@ -126,12 +131,14 @@ def dump(obj,
          output_encoding=DEFAULT_OUTPUT_ENCODING,
          keyword_keys=False,
          sort_keys=False,
-         sort_sets=False):
+         sort_sets=False,
+         pretty=False):
     outcome = udump(obj,
                     string_encoding=string_encoding,
                     keyword_keys=keyword_keys,
                     sort_keys=sort_keys,
-                    sort_sets=sort_sets)
+                    sort_sets=sort_sets,
+                    pretty=pretty)
     if __PY3:
         return outcome
     return outcome.encode(output_encoding)

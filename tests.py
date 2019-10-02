@@ -460,6 +460,15 @@ class EdnTest(unittest.TestCase):
         self.assertIsInstance(cat, Cat)
         self.assertEqual("Alex", cat.name)
 
+    def test_pretty_dumps(self):
+        for (pretty, raw) in (
+            ("1", 1),
+            ("true", True),
+            ("{}", {}),
+            ("#{}", set()),
+        ):
+            self.assertEqual(pretty, dumps(raw, pretty=True))
+
 
 class EdnInstanceTest(unittest.TestCase):
     def test_hashing(self):
